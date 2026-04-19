@@ -1,6 +1,6 @@
 <div align="center">
 
-# ☕ APOS: Artisanal Point of Sale
+# ☕ APOS: Athar Point of Sale
 
 A premium, responsive, and secure Point of Sale (POS) system built with **Flutter** and **Supabase**. Designed to bring a modern, fluid, and robust operational experience to retail environments, cafes, and artisanal businesses.
 
