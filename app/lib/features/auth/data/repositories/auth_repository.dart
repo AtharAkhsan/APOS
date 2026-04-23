@@ -19,16 +19,21 @@ class AuthRepository {
     );
   }
 
-  /// Sign up with email, password, and optional full name.
   Future<AuthResponse> signUp({
     required String email,
     required String password,
     String? fullName,
+    String? role,
+    String? outletId,
   }) {
     return _client.auth.signUp(
       email: email,
       password: password,
-      data: fullName != null ? {'full_name': fullName} : null,
+      data: {
+        if (fullName != null) 'full_name': fullName,
+        if (role != null) 'role': role,
+        if (outletId != null) 'outlet_id': outletId,
+      },
     );
   }
 
@@ -46,11 +51,11 @@ class AuthRepository {
 
   /// Fetch the profile (role, full_name) for the given user ID.
   Future<UserProfile> fetchProfile(String userId) async {
-    final data = await _client
-        .from('profiles')
-        .select('id, role, full_name')
-        .eq('id', userId)
-        .single();
+      final data = await _client
+          .from('profiles')
+          .select('id, role, full_name, outlet_id')
+          .eq('id', userId)
+          .single();
     return UserProfile.fromJson(data);
   }
 }

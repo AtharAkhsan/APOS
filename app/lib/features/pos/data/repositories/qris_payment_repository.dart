@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../core/config/app_config.dart';
 
 class QrisPaymentRepository {
   QrisPaymentRepository(this._supabase);
@@ -18,6 +19,9 @@ class QrisPaymentRepository {
           'order_id': orderId,
           'gross_amount': grossAmount,
           'cart_items': cartItems,
+        },
+        headers: {
+          'Authorization': 'Bearer ${AppConfig.supabaseAnonKey}',
         },
       );
 

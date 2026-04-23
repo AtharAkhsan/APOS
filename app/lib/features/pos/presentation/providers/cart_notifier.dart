@@ -70,10 +70,12 @@ class CartState extends Equatable {
   const CartState({
     this.items = const [],
     this.paymentMethod = 'CASH',
+    this.orderType = 'Dine In',
   });
 
   final List<CartItem> items;
   final String paymentMethod;
+  final String orderType; // 'Dine In' or 'Take Away'
 
   /// Total selling price.
   double get totalAmount =>
@@ -95,15 +97,17 @@ class CartState extends Equatable {
   CartState copyWith({
     List<CartItem>? items,
     String? paymentMethod,
+    String? orderType,
   }) {
     return CartState(
       items: items ?? this.items,
       paymentMethod: paymentMethod ?? this.paymentMethod,
+      orderType: orderType ?? this.orderType,
     );
   }
 
   @override
-  List<Object?> get props => [items, paymentMethod];
+  List<Object?> get props => [items, paymentMethod, orderType];
 }
 
 // ════════════════════════════════════════════════════════════
@@ -243,6 +247,11 @@ class CartNotifier extends Notifier<CartState> {
   // ── Payment Method ────────────────────────────────────
   void setPaymentMethod(String method) {
     state = state.copyWith(paymentMethod: method);
+  }
+
+  // ── Order Type ────────────────────────────────────────
+  void setOrderType(String type) {
+    state = state.copyWith(orderType: type);
   }
 
   // ── Clear Cart ────────────────────────────────────────

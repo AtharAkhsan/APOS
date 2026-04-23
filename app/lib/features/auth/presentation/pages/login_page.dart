@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/theme/app_theme.dart';
+import '../../../../features/settings/presentation/providers/outlet_notifier.dart';
+import '../../../../features/settings/domain/entities/outlet.dart';
 import '../providers/auth_providers.dart';
 
 /// ════════════════════════════════════════════════════════════
@@ -29,6 +31,9 @@ class _LoginPageState extends ConsumerState<LoginPage>
   bool _isLoading = false;
   bool _obscurePassword = true;
   String? _errorMessage;
+  
+  String _selectedRole = 'cashier';
+  String? _selectedOutletId;
 
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
@@ -60,6 +65,8 @@ class _LoginPageState extends ConsumerState<LoginPage>
     setState(() {
       _isSignUp = !_isSignUp;
       _errorMessage = null;
+      _selectedRole = 'cashier';
+      _selectedOutletId = null;
     });
     _fadeController.forward(from: 0);
   }
@@ -82,6 +89,8 @@ class _LoginPageState extends ConsumerState<LoginPage>
           fullName: _nameController.text.trim().isNotEmpty
               ? _nameController.text.trim()
               : null,
+          role: _selectedRole,
+          outletId: _selectedOutletId,
         );
         if (response.user != null && mounted) {
           // Auto sign-in after sign-up if email confirmation is disabled
@@ -125,6 +134,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final outletsAsync = ref.watch(outletNotifierProvider);
 
     return Scaffold(
       backgroundColor: context.theme.scaffoldBackgroundColor,
@@ -291,6 +301,40 @@ class _LoginPageState extends ConsumerState<LoginPage>
                             ),
                             const SizedBox(height: 8),
 
+                            // ── Role and Outlet (sign-up only) ──
+                            if (_isSignUp) ...[
+                              const SizedBox(height: 8),
+                              _buildDropdown<String>(
+                                label: 'Role',
+                                value: _selectedRole,
+                                items: const [
+                                  DropdownMenuItem(value: 'cashier', child: Text('Cashier')),
+                                  DropdownMenuItem(value: 'waiter', child: Text('Waiter')),
+                                ],
+                                onChanged: (v) {
+                                  if (v != null) setState(() => _selectedRole = v);
+                                },
+                              ),
+                              const SizedBox(height: 16),
+                              outletsAsync.when(
+                                data: (outlets) => _buildDropdown<String?>(
+                                  label: 'Select Outlet',
+                                  value: _selectedOutletId,
+                                  items: [
+                                    const DropdownMenuItem(value: null, child: Text('Choose an outlet...')),
+                                    ...outlets.map((o) => DropdownMenuItem(value: o.id, child: Text(o.name))),
+                                  ],
+                                  onChanged: (v) {
+                                    setState(() => _selectedOutletId = v);
+                                  },
+                                  validator: (v) => v == null ? 'Please select an outlet' : null,
+                                ),
+                                loading: () => const Center(child: CircularProgressIndicator()),
+                                error: (e, st) => Text('Failed to load outlets: $e', style: TextStyle(color: Colors.red)),
+                              ),
+                              const SizedBox(height: 8),
+                            ],
+
                             // ── Error message ───────────────────
                             if (_errorMessage != null) ...[
                               const SizedBox(height: 8),
@@ -453,6 +497,77 @@ class _LoginPageState extends ConsumerState<LoginPage>
             fillColor: context.theme.surfaceLow,
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: context.theme.outlineVariantCustom.withOpacity(0.5),
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: context.theme.outlineVariantCustom.withOpacity(0.4),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: context.theme.colorScheme.primary,
+                width: 1.5,
+              ),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: context.theme.colorScheme.error,
+              ),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: context.theme.colorScheme.error,
+                width: 1.5,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDropdown<T>({
+    required String label,
+    required T value,
+    required List<DropdownMenuItem<T>> items,
+    required void Function(T?) onChanged,
+    String? Function(T?)? validator,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: context.theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 6),
+        DropdownButtonFormField<T>(
+          value: value,
+          items: items,
+          onChanged: onChanged,
+          validator: validator,
+          dropdownColor: context.theme.surfaceLow,
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            color: context.theme.colorScheme.onSurface,
+          ),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: context.theme.surfaceLow,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(

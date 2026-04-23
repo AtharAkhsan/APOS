@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../providers/active_outlet_provider.dart';
 import '../../features/settings/presentation/providers/outlet_notifier.dart';
+import '../../features/auth/presentation/providers/auth_providers.dart';
 
 /// Compact outlet selector chip — used in the AppBar of POS, Inventory, Accounting.
 /// Shows the active outlet name with a dropdown to switch.
@@ -21,6 +22,8 @@ class _OutletSelectorState extends ConsumerState<OutletSelector> {
   Widget build(BuildContext context) {
     var activeOutlet = ref.watch(activeOutletProvider);
     final outletsAsync = ref.watch(outletNotifierProvider);
+    final profileAsync = ref.watch(userProfileProvider);
+    final profile = profileAsync.valueOrNull;
 
     return outletsAsync.when(
       loading: () => SizedBox(
@@ -31,19 +34,36 @@ class _OutletSelectorState extends ConsumerState<OutletSelector> {
       error: (_, __) => const Icon(Icons.error_outline, size: 20),
       data: (outlets) {
         if (outlets.isEmpty) return const SizedBox.shrink();
+        if (profileAsync.isLoading) return const SizedBox.shrink();
 
-        // Enforce fallback if the page requires an outlet but the user brought over 'null' (All Outlets)
-        if (!widget.allowAll && activeOutlet == null) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              ref.read(activeOutletProvider.notifier).setOutlet(outlets.first);
-            }
-          });
-          // Optimistically show the first to avoid flicker
-          activeOutlet = outlets.first;
+        final isAdmin = profile?.isAdmin ?? false;
+
+        if (!isAdmin) {
+          // Force non-admins to their assigned outlet
+          final assignedOutlet = outlets.firstWhere(
+            (o) => o.id == profile?.outletId, 
+            orElse: () => outlets.first
+          );
+          if (activeOutlet?.id != assignedOutlet.id) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) ref.read(activeOutletProvider.notifier).setOutlet(assignedOutlet);
+            });
+            activeOutlet = assignedOutlet;
+          }
+        } else {
+          // Admin fallback logic
+          if (!widget.allowAll && activeOutlet == null) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                ref.read(activeOutletProvider.notifier).setOutlet(outlets.first);
+              }
+            });
+            activeOutlet = outlets.first;
+          }
         }
 
         return PopupMenuButton<String>(
+          enabled: isAdmin,
           onSelected: (id) {
             if (id == 'ALL') {
                ref.read(activeOutletProvider.notifier).setOutlet(null);

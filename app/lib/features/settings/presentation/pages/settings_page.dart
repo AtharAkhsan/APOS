@@ -5,9 +5,14 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/providers/theme_provider.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
+import '../../../../core/providers/active_outlet_provider.dart';
+import '../providers/outlet_notifier.dart';
 import '../../../../core/router/app_router.dart';
 
 import 'outlet_management_page.dart';
+import 'receipt_settings_page.dart';
+import 'payment_methods_page.dart';
+import 'change_password_page.dart';
 
 /// ════════════════════════════════════════════════════════════
 /// SETTINGS PAGE — "The Artisanal Interface" design system
@@ -20,6 +25,15 @@ class SettingsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final currentThemeMode = ref.watch(themeModeProvider);
     final profileAsync = ref.watch(userProfileProvider);
+    final outletsAsync = ref.watch(outletNotifierProvider);
+    
+    // Find outlet name
+    String? outletName;
+    if (profileAsync.valueOrNull?.outletId != null && outletsAsync.valueOrNull != null) {
+      final match = outletsAsync.valueOrNull!.where((o) => o.id == profileAsync.valueOrNull!.outletId).firstOrNull;
+      outletName = match?.name;
+    }
+    
     return Scaffold(
       backgroundColor: context.theme.scaffoldBackgroundColor,
       appBar: AppBar(
@@ -112,7 +126,9 @@ class SettingsPage extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          profileAsync.valueOrNull?.isAdmin == true ? 'Admin' : 'Cashier',
+                          profileAsync.valueOrNull?.isAdmin == true
+                              ? 'Admin'
+                              : (profileAsync.valueOrNull?.isWaiter == true ? 'Waiter' : 'Cashier'),
                           style: GoogleFonts.inter(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
@@ -122,6 +138,25 @@ class SettingsPage extends ConsumerWidget {
                           ),
                         ),
                       ),
+                      if (outletName != null) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: context.theme.colorScheme.secondaryContainer.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            outletName,
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: context.theme.colorScheme.secondary,
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -155,7 +190,14 @@ class SettingsPage extends ConsumerWidget {
                       iconColor: context.theme.colorScheme.onSurfaceVariant,
                       title: 'Receipt Settings',
                       subtitle: 'Header, footer & format',
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ReceiptSettingsPage(),
+                          ),
+                        );
+                      },
                     ),
                     _SettingsDivider(),
                     _SettingsTile(
@@ -164,7 +206,14 @@ class SettingsPage extends ConsumerWidget {
                       iconColor: context.theme.colorScheme.tertiary,
                       title: 'Payment Methods',
                       subtitle: 'Cash, QRIS & card settings',
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const PaymentMethodsPage(),
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -236,7 +285,14 @@ class SettingsPage extends ConsumerWidget {
                       iconColor: context.theme.colorScheme.onSurfaceVariant,
                       title: 'Change Password',
                       subtitle: 'Update your credentials',
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ChangePasswordPage(),
+                          ),
+                        );
+                      },
                     ),
                     _SettingsDivider(),
                     _SettingsTile(

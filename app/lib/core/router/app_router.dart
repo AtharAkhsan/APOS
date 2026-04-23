@@ -57,7 +57,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final role = ref.read(userRoleProvider);
       final currentPath = state.uri.toString();
 
-      if (role == 'cashier' && AppRoutes.adminOnly.contains(currentPath)) {
+      if ((role == 'cashier' || role == 'waiter') && AppRoutes.adminOnly.contains(currentPath)) {
         return AppRoutes.pos;
       }
 

@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/providers/supabase_provider.dart';
 import '../../../../core/providers/active_outlet_provider.dart';
+import '../../../../core/config/app_config.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 import '../providers/cart_notifier.dart';
 
 // ════════════════════════════════════════════════════════════
@@ -73,19 +75,29 @@ class CheckoutController extends AsyncNotifier<CheckoutResult?> {
       final userId = supabase.auth.currentUser?.id;
 
       final activeOutlet = ref.read(activeOutletProvider);
-      if (activeOutlet == null) {
+      final profile = ref.read(userProfileProvider).valueOrNull;
+      
+      String? outletId = activeOutlet?.id;
+      if (profile != null && !profile.isAdmin) {
+        outletId = profile.outletId;
+      }
+
+      if (outletId == null) {
         throw Exception('No outlet selected.');
       }
 
       final payload = ref.read(cartProvider.notifier).toCheckoutPayload(
         staffId: userId,
-        outletId: activeOutlet.id,
+        outletId: outletId,
       );
 
-      // Call Edge Function
+      // Call Edge Function using anon key to bypass ES256 token algorithm issue
       final response = await supabase.functions.invoke(
         'checkout',
         body: payload,
+        headers: {
+          'Authorization': 'Bearer ${AppConfig.supabaseAnonKey}',
+        },
       );
 
       // Parse response

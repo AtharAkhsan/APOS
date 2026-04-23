@@ -11,6 +11,8 @@ import '../providers/cart_notifier.dart';
 import '../providers/checkout_notifier.dart';
 import '../../../../core/services/receipt_service.dart';
 import '../../../../core/widgets/outlet_selector.dart';
+import '../../../../core/providers/active_outlet_provider.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 import '../widgets/qris_dialog.dart';
 
 /// ════════════════════════════════════════════════════════════
@@ -273,6 +275,15 @@ class _PosPageState extends ConsumerState<PosPage> {
 
   void _showSuccessDialog(
       BuildContext context, WidgetRef ref, CheckoutResult result) {
+    final activeOutlet = ref.read(activeOutletProvider);
+    final profile = ref.read(userProfileProvider).valueOrNull;
+    final cart = ref.read(cartProvider);
+    
+    // In case the active outlet isn't set, default to profile's assigned outlet
+    final outletId = activeOutlet?.id ?? profile?.outletId;
+    final cashierName = profile?.displayName ?? 'System Account';
+    final orderType = cart.orderType;
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -328,7 +339,12 @@ class _PosPageState extends ConsumerState<PosPage> {
                     ReceiptService.generateAndPrintReceipt(
                       transaction: result,
                       items: result.receiptItems,
-                      cashierName: 'System Account',
+                      cashierName: cashierName,
+                      outletId: outletId,
+                      outletName: activeOutlet?.name,
+                      outletAddress: activeOutlet?.address,
+                      outletPhone: activeOutlet?.phone,
+                      orderType: orderType,
                     );
                   },
                   style: OutlinedButton.styleFrom(
@@ -696,6 +712,46 @@ class _DesktopCartPanel extends ConsumerWidget {
           ),
 
           const SizedBox(height: 16),
+
+          // ── Order Type Toggle ───────────────────────────
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              children: ['Dine In', 'Take Away'].map((type) {
+                final isSelected = cart.orderType == type;
+                return Expanded(
+                  child: GestureDetector(
+                    onTap: () => ref.read(cartProvider.notifier).setOrderType(type),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? context.theme.colorScheme.primary
+                            : context.theme.surfaceHighest,
+                        borderRadius: type == 'Dine In'
+                            ? const BorderRadius.horizontal(left: Radius.circular(10))
+                            : const BorderRadius.horizontal(right: Radius.circular(10)),
+                      ),
+                      child: Center(
+                        child: Text(
+                          type,
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: isSelected
+                                ? context.theme.colorScheme.onPrimary
+                                : context.theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+
+          const SizedBox(height: 12),
 
           // ── Cart Items ─────────────────────────────────
           Expanded(

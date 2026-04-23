@@ -52,7 +52,7 @@ final userProfileProvider = FutureProvider<UserProfile?>((ref) async {
   final repo = ref.read(authRepositoryProvider);
   try {
     final profile = await repo.fetchProfile(user.id);
-    debugPrint('Profile fetched: role=${profile.role}, name=${profile.fullName}');
+    debugPrint('Profile fetched: role=${profile.role}, name=${profile.fullName}, outletId=${profile.outletId}');
     return profile;
   } catch (e) {
     debugPrint('Failed to fetch profile: $e');

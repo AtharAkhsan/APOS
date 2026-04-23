@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/providers/supabase_provider.dart';
 import '../../../../core/providers/active_outlet_provider.dart';
 import '../../domain/entities/product.dart';
+import '../../../../features/auth/presentation/providers/auth_providers.dart';
 
 /// Repository that handles all product CRUD via Supabase.
 class ProductRepository {
@@ -132,5 +133,12 @@ class ProductRepository {
 
 final productRepositoryProvider = Provider<ProductRepository>((ref) {
   final activeOutlet = ref.watch(activeOutletProvider);
-  return ProductRepository(ref, activeOutlet?.id);
+  final profile = ref.watch(userProfileProvider).valueOrNull;
+  
+  String? outletId = activeOutlet?.id;
+  if (profile != null && !profile.isAdmin) {
+    outletId = profile.outletId;
+  }
+  
+  return ProductRepository(ref, outletId);
 });
