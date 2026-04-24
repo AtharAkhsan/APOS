@@ -1,11 +1,11 @@
 {
-    "name": "apos",
-    "short_name": "apos",
+    "name": "Toempah Rempah",
+    "short_name": "Toempah Rempah",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#1a1b15",
     "theme_color": "#1a1b15",
-    "description": "A new Flutter project.",
+    "description": "Toempah Rempah — Point of Sale System.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

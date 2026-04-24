@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Centralized Material 3 theme for the APOS app based on "The Artisanal Interface"
+/// Centralized Material 3 theme for the Toempah Rempah app based on "The Artisanal Interface"
 class AppTheme {
   AppTheme._();
 

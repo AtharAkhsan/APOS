@@ -6,6 +6,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 DateTime _parseUtcDate(dynamic raw) {
   if (raw == null) return DateTime.now();
   String s = raw.toString();
+  // If it's just a date (YYYY-MM-DD), parse it as local time
+  if (s.length == 10) {
+    return DateTime.tryParse(s) ?? DateTime.now();
+  }
   if (!s.endsWith('Z') && !s.contains('+') && !RegExp(r'-\d{2}:\d{2}$').hasMatch(s)) {
     s += 'Z';
   }

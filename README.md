@@ -1,6 +1,6 @@
 <div align="center">
 
-# ☕ APOS: Athar Point of Sale
+# 🌶️ Toempah Rempah: Point of Sale
 
 A premium, responsive, and secure Point of Sale (POS) system built with **Flutter** and **Supabase**. Designed to bring a modern, fluid, and robust operational experience to retail environments, cafes, and artisanal businesses.
 
@@ -77,7 +77,7 @@ flutter run -d chrome
 
 ## 🔒 Security Architecture (RBAC)
 
-APOS uses a robust pattern where the `auth.users` state seamlessly syncs with a `public.profiles` table using PostgreSQL database triggers.
+Toempah Rempah uses a robust pattern where the `auth.users` state seamlessly syncs with a `public.profiles` table using PostgreSQL database triggers.
 
 *   When a new user signs up, a trigger automatically drops them into the `profiles` table with a default `cashier` constraint.
 *   Riverpod providers (`authStateProvider` -> `userProfileProvider`) reactively push these role states down to the UI.

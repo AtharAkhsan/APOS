@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:apos/core/theme/app_theme.dart';
+import 'package:toempah_rempah/core/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -137,6 +137,9 @@ class _FiltersRow extends StatelessWidget {
           DropdownMenuItem(
               value: 'yearly',
               child: Text('Yearly', overflow: TextOverflow.ellipsis)),
+          DropdownMenuItem(
+              value: 'all',
+              child: Text('All Time', overflow: TextOverflow.ellipsis)),
         ],
         onChanged: onPeriodChanged,
       );

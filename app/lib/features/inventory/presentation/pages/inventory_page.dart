@@ -1,9 +1,12 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:apos/core/theme/app_theme.dart';
 import 'package:flutter/services.dart';
+import 'package:toempah_rempah/core/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../providers/product_notifier.dart';
 import '../providers/categories_provider.dart';
@@ -972,6 +975,10 @@ class _ProductFormDialogState extends ConsumerState<_ProductFormDialog> {
   late final TextEditingController _unitCtrl;
   late final TextEditingController _imageUrlCtrl;
 
+  final _picker = ImagePicker();
+  Uint8List? _selectedImageBytes;
+  String? _selectedImageExtension;
+
   String? _selectedCategoryId;
   bool _isSubmitting = false;
 
@@ -1009,20 +1016,65 @@ class _ProductFormDialogState extends ConsumerState<_ProductFormDialog> {
     super.dispose();
   }
 
+  Future<void> _pickImage() async {
+    try {
+      final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+      if (image != null) {
+        final bytes = await image.readAsBytes();
+        setState(() {
+          _selectedImageBytes = bytes;
+          _selectedImageExtension = image.name.contains('.') ? image.name.split('.').last : 'jpg';
+          _imageUrlCtrl.clear(); // Clear manual URL if picking a file
+        });
+      }
+    } catch (e) {
+      debugPrint('Error picking image: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: context.theme.colorScheme.error,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isSubmitting = true);
 
     try {
+      String? finalImageUrl = _imageUrlCtrl.text.trim().isEmpty ? null : _imageUrlCtrl.text.trim();
+
+      if (_selectedImageBytes != null) {
+        final ext = _selectedImageExtension ?? 'jpg';
+        final fileName = '${DateTime.now().millisecondsSinceEpoch}.$ext';
+        final filePath = 'products/$fileName';
+
+        try {
+          await Supabase.instance.client.storage
+              .from('product_images')
+              .uploadBinary(
+                filePath,
+                _selectedImageBytes!,
+                fileOptions: FileOptions(contentType: 'image/$ext'),
+              );
+          finalImageUrl = Supabase.instance.client.storage
+              .from('product_images')
+              .getPublicUrl(filePath);
+        } catch (e) {
+          throw Exception('Failed to upload image: $e');
+        }
+      }
+
       final product = Product(
         id: widget.product?.id ?? '',
         name: _nameCtrl.text.trim(),
         sku: _skuCtrl.text.trim().toUpperCase(),
         categoryId: _selectedCategoryId,
-        imageUrl: _imageUrlCtrl.text.trim().isEmpty
-            ? null
-            : _imageUrlCtrl.text.trim(),
+        imageUrl: finalImageUrl,
         purchasePrice: double.parse(_purchasePriceCtrl.text.trim()),
         sellingPrice: double.parse(_sellingPriceCtrl.text.trim()),
         currentStock: int.parse(_stockCtrl.text.trim()),
@@ -1281,17 +1333,62 @@ class _ProductFormDialogState extends ConsumerState<_ProductFormDialog> {
                   ),
                   const SizedBox(height: 16),
 
-                  // ── Image URL ────────────────────────────
-                  _ArtisanalField(
-                    controller: _imageUrlCtrl,
-                    label: 'Image URL',
-                    hint: 'https://example.com/image.jpg',
-                    icon: Icons.image_outlined,
-                    keyboardType: TextInputType.url,
-                    onChanged: (_) => setState(() {}),
+                  // ── Image ────────────────────────────────
+                  Padding(
+                    padding: const EdgeInsets.only(left: 4, bottom: 8),
+                    child: Row(
+                      children: [
+                        Icon(Icons.image_outlined,
+                            size: 14, color: context.theme.colorScheme.onSurfaceVariant),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Product Image',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: context.theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _pickImage,
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            side: BorderSide(color: context.theme.outlineVariantCustom),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                          ),
+                          icon: Icon(Icons.upload_file_rounded, size: 18, color: context.theme.colorScheme.primary),
+                          label: Text('Upload Image', style: GoogleFonts.inter(color: context.theme.colorScheme.primary)),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text('OR', style: GoogleFonts.inter(fontSize: 12, color: context.theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.w600)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 2,
+                        child: _ArtisanalField(
+                          controller: _imageUrlCtrl,
+                          label: '', // Hidden due to section header
+                          hint: 'https://example.com/image.jpg',
+                          icon: Icons.link,
+                          keyboardType: TextInputType.url,
+                          onChanged: (_) => setState(() {
+                            if (_imageUrlCtrl.text.isNotEmpty) {
+                              _selectedImageBytes = null;
+                            }
+                          }),
+                        ),
+                      ),
+                    ],
                   ),
                   // ── Image Preview ────────────────────────
-                  if (_imageUrlCtrl.text.trim().isNotEmpty)
+                  if (_selectedImageBytes != null || _imageUrlCtrl.text.trim().isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 12),
                       child: ClipRRect(
@@ -1300,27 +1397,32 @@ class _ProductFormDialogState extends ConsumerState<_ProductFormDialog> {
                           height: 120,
                           width: double.infinity,
                           color: context.theme.surfaceHighest.withOpacity(0.3),
-                          child: Image.network(
-                            _imageUrlCtrl.text.trim(),
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.broken_image_outlined,
-                                      size: 32, color: context.theme.colorScheme.onSurfaceVariant),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Invalid image URL',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 11,
-                                      color: context.theme.colorScheme.onSurfaceVariant,
+                          child: _selectedImageBytes != null
+                              ? Image.memory(
+                                  _selectedImageBytes!,
+                                  fit: BoxFit.cover,
+                                )
+                              : Image.network(
+                                  _imageUrlCtrl.text.trim(),
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Center(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.broken_image_outlined,
+                                            size: 32, color: context.theme.colorScheme.onSurfaceVariant),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Invalid image URL',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 11,
+                                            color: context.theme.colorScheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                ],
-                              ),
-                            ),
-                          ),
+                                ),
                         ),
                       ),
                     ),

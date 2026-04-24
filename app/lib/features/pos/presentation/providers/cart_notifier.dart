@@ -71,11 +71,16 @@ class CartState extends Equatable {
     this.items = const [],
     this.paymentMethod = 'CASH',
     this.orderType = 'Dine In',
+    this.transactionDate,
   });
 
   final List<CartItem> items;
   final String paymentMethod;
   final String orderType; // 'Dine In' or 'Take Away'
+  final DateTime? transactionDate; // null = today
+
+  /// The effective date for this transaction.
+  DateTime get effectiveDate => transactionDate ?? DateTime.now();
 
   /// Total selling price.
   double get totalAmount =>
@@ -98,16 +103,19 @@ class CartState extends Equatable {
     List<CartItem>? items,
     String? paymentMethod,
     String? orderType,
+    DateTime? transactionDate,
+    bool clearDate = false,
   }) {
     return CartState(
       items: items ?? this.items,
       paymentMethod: paymentMethod ?? this.paymentMethod,
       orderType: orderType ?? this.orderType,
+      transactionDate: clearDate ? null : (transactionDate ?? this.transactionDate),
     );
   }
 
   @override
-  List<Object?> get props => [items, paymentMethod, orderType];
+  List<Object?> get props => [items, paymentMethod, orderType, transactionDate];
 }
 
 // ════════════════════════════════════════════════════════════
@@ -254,6 +262,15 @@ class CartNotifier extends Notifier<CartState> {
     state = state.copyWith(orderType: type);
   }
 
+  // ── Transaction Date ─────────────────────────────────
+  void setTransactionDate(DateTime? date) {
+    if (date == null) {
+      state = state.copyWith(clearDate: true);
+    } else {
+      state = state.copyWith(transactionDate: date);
+    }
+  }
+
   // ── Clear Cart ────────────────────────────────────────
   void clear() {
     state = const CartState();
@@ -264,12 +281,16 @@ class CartNotifier extends Notifier<CartState> {
     required String? staffId,
     required String outletId,
   }) {
-    return {
+    final payload = <String, dynamic>{
       'cart_items': state.items.map((i) => i.toCheckoutJson()).toList(),
       'payment_method': state.paymentMethod,
       'staff_id': staffId,
       'outlet_id': outletId,
     };
+    if (state.transactionDate != null) {
+      payload['entry_date'] = state.transactionDate!.toIso8601String().split('T').first;
+    }
+    return payload;
   }
 }
 
