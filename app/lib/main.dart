@@ -18,13 +18,13 @@ Future<void> main() async {
 
   runApp(
     const ProviderScope(
-      child: ToempahRempahApp(),
+      child: APosApp(),
     ),
   );
 }
 
-class ToempahRempahApp extends ConsumerWidget {
-  const ToempahRempahApp({super.key});
+class APosApp extends ConsumerWidget {
+  const APosApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -32,7 +32,7 @@ class ToempahRempahApp extends ConsumerWidget {
     final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp.router(
-      title: 'Toempah Rempah — Point of Sale',
+      title: 'APOS — Point of Sale',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:toempah_rempah/core/theme/app_theme.dart';
+import 'package:apos/core/theme/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/providers/theme_provider.dart';
@@ -341,7 +341,7 @@ class SettingsPage extends ConsumerWidget {
                   child: Column(
                     children: [
                       Text(
-                        'Toempah Rempah — Point of Sale',
+                        'APOS — Point of Sale',
                         style: GoogleFonts.manrope(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:toempah_rempah/core/theme/app_theme.dart';
+import 'package:apos/core/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -509,40 +509,21 @@ class _ArtisanalProductCard extends ConsumerWidget {
                         borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(16),
                         ),
-                        gradient: product.imageUrl == null || product.imageUrl!.isEmpty
-                            ? LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  context.theme.colorScheme.primaryContainer.withOpacity(0.15),
-                                  context.theme.surfaceHighest,
-                                ],
-                              )
-                            : null,
-                      ),
-                      child: ClipRRect(
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(16),
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            context.theme.colorScheme.primaryContainer.withOpacity(0.15),
+                            context.theme.surfaceHighest,
+                          ],
                         ),
-                        child: product.imageUrl != null && product.imageUrl!.isNotEmpty
-                            ? Image.network(
-                                product.imageUrl!,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Center(
-                                  child: Icon(
-                                    Icons.coffee_rounded,
-                                    size: 40,
-                                    color: context.theme.colorScheme.primaryContainer,
-                                  ),
-                                ),
-                              )
-                            : Center(
-                                child: Icon(
-                                  Icons.coffee_rounded,
-                                  size: 40,
-                                  color: context.theme.colorScheme.primaryContainer,
-                                ),
-                              ),
+                      ),
+                      child: Center(
+                        child: Icon(
+                          Icons.coffee_rounded,
+                          size: 40,
+                          color: context.theme.colorScheme.primaryContainer,
+                        ),
                       ),
                     ),
                     // ── Stock Badge ────────────────────────
@@ -768,14 +749,6 @@ class _DesktopCartPanel extends ConsumerWidget {
                 );
               }).toList(),
             ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // ── Transaction Date Picker ─────────────────────
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: _TransactionDatePicker(),
           ),
 
           const SizedBox(height: 12),
@@ -1329,13 +1302,7 @@ class _MobileCartSheet extends ConsumerWidget {
             ],
           ),
         ),
-        const SizedBox(height: 12),
-        // ── Date Picker ──────────────────────────────
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: _TransactionDatePicker(),
-        ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         // ── Items list ───────────────────────────────
         Expanded(
           child: ListView.separated(
@@ -1367,99 +1334,6 @@ class _MobileCartSheet extends ConsumerWidget {
           },
         ),
       ],
-    );
-  }
-}
-
-// ════════════════════════════════════════════════════════════
-// TRANSACTION DATE PICKER
-// ════════════════════════════════════════════════════════════
-
-class _TransactionDatePicker extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final cart = ref.watch(cartProvider);
-    final selectedDate = cart.transactionDate;
-    final isToday = selectedDate == null;
-    final displayDate = selectedDate ?? DateTime.now();
-    final dateFormat = DateFormat('dd MMM yyyy');
-
-    return GestureDetector(
-      onTap: () async {
-        final picked = await showDatePicker(
-          context: context,
-          initialDate: displayDate,
-          firstDate: DateTime(2020),
-          lastDate: DateTime.now().add(const Duration(days: 30)),
-          builder: (context, child) {
-            return Theme(
-              data: context.theme.copyWith(
-                colorScheme: context.theme.colorScheme,
-              ),
-              child: child!,
-            );
-          },
-        );
-        if (picked != null) {
-          // If picked date is today, reset to null (auto)
-          final now = DateTime.now();
-          final isPickedToday = picked.year == now.year &&
-              picked.month == now.month &&
-              picked.day == now.day;
-          ref.read(cartProvider.notifier).setTransactionDate(
-                isPickedToday ? null : picked,
-              );
-        }
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: isToday
-              ? context.theme.surfaceHighest
-              : context.theme.colorScheme.primaryContainer.withOpacity(0.3),
-          borderRadius: BorderRadius.circular(10),
-          border: isToday
-              ? null
-              : Border.all(
-                  color: context.theme.colorScheme.primary.withOpacity(0.4),
-                  width: 1,
-                ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              Icons.calendar_today_rounded,
-              size: 16,
-              color: isToday
-                  ? context.theme.colorScheme.onSurfaceVariant
-                  : context.theme.colorScheme.primary,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                isToday ? 'Today, ${dateFormat.format(displayDate)}' : dateFormat.format(displayDate),
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  fontWeight: isToday ? FontWeight.w400 : FontWeight.w600,
-                  color: isToday
-                      ? context.theme.colorScheme.onSurfaceVariant
-                      : context.theme.colorScheme.primary,
-                ),
-              ),
-            ),
-            if (!isToday)
-              GestureDetector(
-                onTap: () =>
-                    ref.read(cartProvider.notifier).setTransactionDate(null),
-                child: Icon(
-                  Icons.close_rounded,
-                  size: 16,
-                  color: context.theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-          ],
-        ),
-      ),
     );
   }
 }

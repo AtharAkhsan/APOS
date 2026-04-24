@@ -61,7 +61,7 @@ class ReceiptService {
     String? outletPhone,
     String orderType = 'Dine In',
   }) async {
-    String storeName = outletName ?? 'Toempah Rempah';
+    String storeName = outletName ?? 'APOS STORE';
     String footerText = 'Thank You!\nPlease come again';
 
     debugPrint('[ReceiptService] outletId=$outletId, outletName=$outletName');
@@ -173,11 +173,7 @@ class ReceiptService {
               // ── Transaction Info ──
               ..._buildInfoRows({
                 'Ref': transaction.referenceNo,
-                'Date': DateFormat('dd-MM-yyyy HH:mm').format(
-                  transaction.createdAt.isNotEmpty 
-                      ? DateTime.tryParse(transaction.createdAt)?.toLocal() ?? DateTime.now() 
-                      : DateTime.now()
-                ),
+                'Date': DateFormat('dd-MM-yyyy HH:mm').format(DateTime.now()),
                 'Staff': cashierName,
                 'Pay': transaction.paymentMethod,
               }),

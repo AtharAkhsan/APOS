@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "Toempah Rempah" "\0"
+            VALUE "FileDescription", "apos" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "toempah_rempah" "\0"
+            VALUE "InternalName", "apos" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "toempah_rempah.exe" "\0"
-            VALUE "ProductName", "Toempah Rempah" "\0"
+            VALUE "OriginalFilename", "apos.exe" "\0"
+            VALUE "ProductName", "apos" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

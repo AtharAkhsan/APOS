@@ -167,9 +167,9 @@ class _LoginPageState extends ConsumerState<LoginPage>
                       ),
                       child: Center(
                         child: Text(
-                          'TR',
+                          'A',
                           style: GoogleFonts.manrope(
-                            fontSize: 28,
+                            fontSize: 36,
                             fontWeight: FontWeight.w800,
                             color: context.theme.colorScheme.onPrimary,
                           ),
@@ -178,7 +178,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
                     ),
                     const SizedBox(height: 24),
                     Text(
-                      'Toempah Rempah',
+                      'APOS',
                       style: GoogleFonts.manrope(
                         fontSize: 28,
                         fontWeight: FontWeight.w800,
