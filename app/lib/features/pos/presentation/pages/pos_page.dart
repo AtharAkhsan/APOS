@@ -14,6 +14,8 @@ import '../../../../core/widgets/outlet_selector.dart';
 import '../../../../core/providers/active_outlet_provider.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../widgets/qris_dialog.dart';
+import '../widgets/active_orders_dialog.dart';
+import '../providers/active_orders_notifier.dart';
 
 /// ════════════════════════════════════════════════════════════
 /// POS PAGE — "The Artisanal Interface" cashier screen
@@ -132,9 +134,59 @@ class _PosPageState extends ConsumerState<PosPage> {
         actions: [
           const OutletSelector(),
           const SizedBox(width: 8),
+          // Active Orders Button
+          Consumer(
+            builder: (context, ref, child) {
+              final activeOrdersAsync = ref.watch(activeOrdersProvider);
+              final count = activeOrdersAsync.valueOrNull?.length ?? 0;
+              return Stack(
+                alignment: Alignment.topRight,
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.receipt_long_outlined, color: context.theme.colorScheme.onSurface),
+                    onPressed: () async {
+                      ref.read(activeOrdersProvider.notifier).refresh();
+                      final result = await showDialog<CheckoutResult?>(
+                        context: context,
+                        builder: (ctx) => const ActiveOrdersDialog(),
+                      );
+                      if (result != null && context.mounted) {
+                        _showSuccessDialog(context, ref, result);
+                        ref.read(productNotifierProvider.notifier).refresh();
+                      }
+                    },
+                  ),
+                  if (count > 0)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: context.theme.colorScheme.error,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          '$count',
+                          style: GoogleFonts.inter(
+                            color: context.theme.colorScheme.onError,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+          const SizedBox(width: 8),
           IconButton(
-            icon: Icon(Icons.notifications_none_rounded, color: context.theme.colorScheme.onSurface),
-            onPressed: () {},
+            icon: Icon(Icons.refresh_rounded, color: context.theme.colorScheme.onSurfaceVariant),
+            onPressed: () {
+              ref.read(productNotifierProvider.notifier).refresh();
+              ref.read(activeOrdersProvider.notifier).refresh();
+            },
           ),
           const SizedBox(width: 8),
           Container(

@@ -8,6 +8,9 @@ import '../providers/accounting_notifier.dart';
 import '../../data/repositories/accounting_repository.dart';
 import '../widgets/expense_dialog.dart';
 import '../../../../core/widgets/outlet_selector.dart';
+import '../../../../core/providers/active_outlet_provider.dart';
+import '../../data/services/excel_export_service.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 
 /// ════════════════════════════════════════════════════════════
 /// ACCOUNTING PAGE — "The Artisanal Interface" design system
@@ -21,6 +24,7 @@ class AccountingPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ledgerState = ref.watch(generalLedgerProvider);
+    final activeOutlet = ref.watch(activeOutletProvider);
 
     return Scaffold(
       backgroundColor: context.theme.scaffoldBackgroundColor,
@@ -41,10 +45,17 @@ class AccountingPage extends ConsumerWidget {
           const OutletSelector(allowAll: true),
           const SizedBox(width: 8),
           IconButton(
+            icon: Icon(Icons.file_download_outlined, color: context.theme.colorScheme.primary),
+            tooltip: 'Export to Excel',
+            onPressed: () => _exportExcel(context, ref),
+          ),
+          IconButton(
             icon: Icon(Icons.refresh_rounded, color: context.theme.colorScheme.onSurfaceVariant),
             tooltip: 'Refresh Ledger',
-            onPressed: () =>
-                ref.read(generalLedgerProvider.notifier).refresh(),
+            onPressed: () {
+                ref.read(generalLedgerProvider.notifier).refresh();
+                ref.invalidate(accountingTotalsProvider);
+            },
           ),
           const SizedBox(width: 8),
         ],
@@ -73,45 +84,70 @@ class AccountingPage extends ConsumerWidget {
             decimalDigits: 0,
           );
 
-          // Calculate totals
-          double totalDebit = 0;
-          double totalCredit = 0;
-          for (final e in entries) {
-            totalDebit += e.debit;
-            totalCredit += e.credit;
-          }
-
           return Column(
             children: [
-              // ── Summary Bar ─────────────────────────────
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                child: Row(
-                  children: [
-                    _SummaryChip(
-                      label: 'Entries',
-                      value: '${entries.length}',
-                      bg: context.theme.surfaceHighest,
-                      fg: context.theme.colorScheme.onSurface,
+              // ── RPC-backed Summary Bar ──────────────────
+              Consumer(builder: (context, ref, _) {
+                final totalsAsync = ref.watch(accountingTotalsProvider);
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  child: totalsAsync.when(
+                    loading: () => Row(
+                      children: [
+                        _SummaryChip(label: 'Entries', value: '...', bg: context.theme.surfaceHighest, fg: context.theme.colorScheme.onSurface),
+                        const SizedBox(width: 8),
+                        _SummaryChip(label: 'Debit', value: '...', bg: context.theme.tertiaryFixedDim.withOpacity(0.3), fg: context.theme.colorScheme.tertiary),
+                        const SizedBox(width: 8),
+                        _SummaryChip(label: 'Credit', value: '...', bg: context.theme.colorScheme.errorContainer, fg: context.theme.colorScheme.error),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    _SummaryChip(
-                      label: 'Debit',
-                      value: currency.format(totalDebit),
-                      bg: context.theme.tertiaryFixedDim.withOpacity(0.3),
-                      fg: context.theme.colorScheme.tertiary,
+                    error: (_, __) => Row(
+                      children: [
+                        _SummaryChip(label: 'Entries', value: '${entries.length}', bg: context.theme.surfaceHighest, fg: context.theme.colorScheme.onSurface),
+                        const SizedBox(width: 8),
+                        _SummaryChip(label: 'Debit', value: 'Error', bg: context.theme.tertiaryFixedDim.withOpacity(0.3), fg: context.theme.colorScheme.tertiary),
+                        const SizedBox(width: 8),
+                        _SummaryChip(label: 'Credit', value: 'Error', bg: context.theme.colorScheme.errorContainer, fg: context.theme.colorScheme.error),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    _SummaryChip(
-                      label: 'Credit',
-                      value: currency.format(totalCredit),
-                      bg: context.theme.colorScheme.errorContainer,
-                      fg: context.theme.colorScheme.error,
+                    data: (totals) => Row(
+                      children: [
+                        _SummaryChip(
+                          label: 'Ledger Entries',
+                          value: '${totals.totalLedgerEntries}',
+                          bg: context.theme.surfaceHighest,
+                          fg: context.theme.colorScheme.onSurface,
+                        ),
+                        const SizedBox(width: 8),
+                        _SummaryChip(
+                          label: 'Total Debit',
+                          value: currency.format(totals.totalDebit),
+                          bg: context.theme.tertiaryFixedDim.withOpacity(0.3),
+                          fg: context.theme.colorScheme.tertiary,
+                        ),
+                        const SizedBox(width: 8),
+                        _SummaryChip(
+                          label: 'Total Credit',
+                          value: currency.format(totals.totalCredit),
+                          bg: context.theme.colorScheme.errorContainer,
+                          fg: context.theme.colorScheme.error,
+                        ),
+                        const SizedBox(width: 8),
+                        _SummaryChip(
+                          label: 'Status',
+                          value: totals.isBalanced ? 'Balanced ✓' : 'Unbalanced ✗',
+                          bg: totals.isBalanced
+                              ? context.theme.tertiaryFixedDim.withOpacity(0.3)
+                              : context.theme.colorScheme.errorContainer,
+                          fg: totals.isBalanced
+                              ? context.theme.colorScheme.tertiary
+                              : context.theme.colorScheme.error,
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              }),
               const SizedBox(height: 8),
               // ── Ledger Content ──────────────────────────
               Expanded(
@@ -133,7 +169,7 @@ class AccountingPage extends ConsumerWidget {
         },
       ),
       // ── FAB ────────────────────────────────────────────
-      floatingActionButton: Container(
+      floatingActionButton: activeOutlet == null ? null : Container(
         decoration: BoxDecoration(
           color: context.theme.accentButton,
           borderRadius: BorderRadius.circular(16),
@@ -164,7 +200,53 @@ class AccountingPage extends ConsumerWidget {
       ),
     );
   }
+
+  Future<void> _exportExcel(BuildContext context, WidgetRef ref) async {
+    final activeOutlet = ref.read(activeOutletProvider);
+    final repo = ref.read(accountingRepositoryProvider);
+    
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final entries = await repo.getAllGeneralLedger(activeOutlet?.id);
+      final totals = await repo.fetchAccountingTotals();
+      final profile = await ref.read(userProfileProvider.future);
+      
+      await ExcelExportService.exportLedger(
+        outletName: activeOutlet?.name,
+        userName: profile?.displayName ?? 'System',
+        totals: totals,
+        entries: entries,
+      );
+
+      if (context.mounted) {
+        Navigator.of(context, rootNavigator: true).pop(); // close dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Exported to Excel successfully!', style: GoogleFonts.inter()),
+            backgroundColor: Colors.green.shade700,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.of(context, rootNavigator: true).pop(); // close dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to export: $e', style: GoogleFonts.inter()),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
+    }
+  }
 }
+
 
 // ════════════════════════════════════════════════════════════
 // SUMMARY CHIP

@@ -131,6 +131,39 @@ class CheckoutController extends AsyncNotifier<CheckoutResult?> {
     }
   }
 
+  /// Processes an existing unpaid order (created by a waiter).
+  Future<CheckoutResult> processUnpaidOrder({
+    required String transactionId,
+    required String paymentMethod,
+    required List<ReceiptItem> receiptItems,
+  }) async {
+    state = const AsyncLoading();
+
+    try {
+      final supabase = ref.read(supabaseProvider);
+      final userId = supabase.auth.currentUser?.id;
+
+      final response = await supabase.rpc('process_unpaid_checkout', params: {
+        'p_transaction_id': transactionId,
+        'p_payment_method': paymentMethod,
+        'p_staff_id': userId,
+      });
+
+      final responseData = response as Map<String, dynamic>;
+
+      if (responseData['success'] != true) {
+        throw Exception(responseData['error'] ?? 'Failed to process unpaid order.');
+      }
+
+      final result = CheckoutResult.fromJson(responseData, receiptItems);
+      state = AsyncData(result);
+      return result;
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
+    }
+  }
+
   /// Reset to idle state (after showing success dialog).
   void reset() {
     state = const AsyncData(null);

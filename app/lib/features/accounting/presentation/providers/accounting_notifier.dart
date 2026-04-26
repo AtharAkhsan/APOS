@@ -55,6 +55,7 @@ class GeneralLedgerNotifier extends AsyncNotifier<List<LedgerEntry>> {
       // Wait to ensure DB triggers/RPC finish
       await Future.delayed(const Duration(milliseconds: 300));
       await refresh();
+      ref.invalidate(accountingTotalsProvider);
     } catch (e) {
       state = prev; // Restore previous state on error
       rethrow;    // Let the UI dialog handle showing the error
@@ -66,3 +67,12 @@ final generalLedgerProvider =
     AsyncNotifierProvider<GeneralLedgerNotifier, List<LedgerEntry>>(
   GeneralLedgerNotifier.new,
 );
+
+// ── Accounting Totals Provider (RPC-backed, no pagination) ──
+
+final accountingTotalsProvider = FutureProvider<AccountingTotals>((ref) async {
+  // Auto-refresh when the active outlet changes
+  ref.watch(activeOutletProvider);
+  final repo = ref.watch(accountingRepositoryProvider);
+  return repo.fetchAccountingTotals();
+});

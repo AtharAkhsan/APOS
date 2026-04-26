@@ -20,21 +20,26 @@ class ResponsiveShell extends ConsumerWidget {
 
   // ── All Nav Destinations ──────────────────────────────────
   static final _allDestinations = <_NavItem>[
-    _NavItem(icon: Icons.dashboard_outlined, selectedIcon: Icons.dashboard, label: 'Dashboard', path: AppRoutes.dashboard, adminOnly: true),
-    _NavItem(icon: Icons.point_of_sale_outlined, selectedIcon: Icons.point_of_sale, label: 'POS', path: AppRoutes.pos, adminOnly: false),
-    _NavItem(icon: Icons.inventory_2_outlined, selectedIcon: Icons.inventory_2, label: 'Inventory', path: AppRoutes.inventory, adminOnly: true),
-    _NavItem(icon: Icons.receipt_long_outlined, selectedIcon: Icons.receipt_long, label: 'Accounting', path: AppRoutes.accounting, adminOnly: true),
-    _NavItem(icon: Icons.settings_outlined, selectedIcon: Icons.settings, label: 'Settings', path: AppRoutes.settings, adminOnly: false),
+    _NavItem(icon: Icons.dashboard_outlined, selectedIcon: Icons.dashboard, label: 'Dashboard', path: AppRoutes.dashboard, role: 'admin'),
+    _NavItem(icon: Icons.point_of_sale_outlined, selectedIcon: Icons.point_of_sale, label: 'POS', path: AppRoutes.pos, role: 'cashier'),
+    _NavItem(icon: Icons.restaurant_menu_outlined, selectedIcon: Icons.restaurant_menu, label: 'Orders', path: AppRoutes.waiter, role: 'waiter'),
+    _NavItem(icon: Icons.inventory_2_outlined, selectedIcon: Icons.inventory_2, label: 'Inventory', path: AppRoutes.inventory, role: 'admin'),
+    _NavItem(icon: Icons.receipt_long_outlined, selectedIcon: Icons.receipt_long, label: 'Accounting', path: AppRoutes.accounting, role: 'admin'),
+    _NavItem(icon: Icons.settings_outlined, selectedIcon: Icons.settings, label: 'Settings', path: AppRoutes.settings, role: 'all'),
   ];
 
   /// Filter destinations based on user role.
   static List<_NavItem> _getDestinations(String? role) {
-    if (role == 'admin' || role == null) {
-      // null = profile not yet loaded, show all until loaded
-      return _allDestinations;
+    if (role == null) return _allDestinations; // profile not yet loaded
+    
+    if (role == 'waiter') {
+      return _allDestinations.where((d) => d.role == 'waiter' || d.role == 'all').toList();
+    } else if (role == 'cashier') {
+      return _allDestinations.where((d) => d.role == 'cashier' || d.role == 'all').toList();
+    } else { // admin
+      // Admin sees everything except waiter screen
+      return _allDestinations.where((d) => d.role != 'waiter').toList();
     }
-    // CASHIER: only non-admin tabs
-    return _allDestinations.where((d) => !d.adminOnly).toList();
   }
 
   int _currentIndex(BuildContext context, List<_NavItem> destinations) {
@@ -352,12 +357,12 @@ class _NavItem {
     required this.selectedIcon,
     required this.label,
     required this.path,
-    required this.adminOnly,
+    required this.role,
   });
 
   final IconData icon;
   final IconData selectedIcon;
   final String label;
   final String path;
-  final bool adminOnly;
+  final String role; // 'admin', 'cashier', 'waiter', or 'all'
 }

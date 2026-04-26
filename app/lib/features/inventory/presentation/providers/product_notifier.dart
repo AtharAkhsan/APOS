@@ -1,14 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/providers/active_outlet_provider.dart';
-import '../../../pos/data/repositories/product_repository.dart';
 import '../../../pos/domain/entities/product.dart';
+import '../../../../features/auth/presentation/providers/auth_providers.dart';
+import '../../../pos/data/repositories/product_repository.dart';
 
 /// Holds the list of products and manages loading / error states.
 class ProductNotifier extends AsyncNotifier<List<Product>> {
   @override
   Future<List<Product>> build() {
     ref.watch(activeOutletProvider);
+    ref.watch(userProfileProvider);
     return _fetch();
   }
 

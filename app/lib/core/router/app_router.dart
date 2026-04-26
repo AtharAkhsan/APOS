@@ -12,6 +12,7 @@ import '../../features/settings/presentation/pages/settings_page.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/providers/auth_providers.dart';
+import '../../features/waiter/presentation/pages/waiter_screen.dart';
 
 // ── Route Paths ─────────────────────────────────────────
 
@@ -23,6 +24,7 @@ class AppRoutes {
   static const inventory  = '/inventory';
   static const accounting = '/accounting';
   static const settings   = '/settings';
+  static const waiter     = '/waiter';
 
   /// Routes restricted to ADMIN only.
   static const adminOnly = {dashboard, inventory, accounting};
@@ -50,6 +52,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       // 2. Logged in but on login page → go to default
       if (isOnLogin) {
+        final role = ref.read(userRoleProvider);
+        if (role == 'waiter') return AppRoutes.waiter;
         return AppRoutes.pos;
       }
 
@@ -57,8 +61,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final role = ref.read(userRoleProvider);
       final currentPath = state.uri.toString();
 
-      if ((role == 'cashier' || role == 'waiter') && AppRoutes.adminOnly.contains(currentPath)) {
-        return AppRoutes.pos;
+      if (role == 'waiter') {
+        if (currentPath != AppRoutes.waiter && currentPath != AppRoutes.settings) {
+          return AppRoutes.waiter;
+        }
+      } else if (role == 'cashier') {
+        if (AppRoutes.adminOnly.contains(currentPath) || currentPath == AppRoutes.waiter) {
+          return AppRoutes.pos;
+        }
+      } else if (role == 'admin') {
+        if (currentPath == AppRoutes.waiter) {
+          return AppRoutes.pos; // admins don't use waiter screen
+        }
       }
 
       return null; // no redirect needed
@@ -108,6 +122,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               child: SettingsPage(),
             ),
           ),
+          GoRoute(
+            path: AppRoutes.waiter,
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: WaiterScreen(),
+            ),
+          ),
         ],
       ),
     ],
@@ -122,6 +142,12 @@ class _RouterAuthNotifier extends ChangeNotifier {
       // Whenever auth changes, also invalidate profile so role updates
       _ref.invalidate(userProfileProvider);
       notifyListeners();
+    });
+
+    _ref.listen(userRoleProvider, (prev, next) {
+      if (prev != next) {
+        notifyListeners();
+      }
     });
   }
 
